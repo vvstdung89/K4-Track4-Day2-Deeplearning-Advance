@@ -31,9 +31,9 @@ python run_experiments.py --stage sanity --backbone resnet50   # loss ban đầu
 python run_experiments.py --stage backbones                    # B01..B05
 python run_experiments.py --stage bnrecal                      # chẩn đoán BN (mục 3 báo cáo)
 python run_experiments.py --stage training --backbone convnext_tiny            # T00..T09
-python run_experiments.py --stage combo    --backbone convnext_tiny --combo "<xem report>"   # T10
+python run_experiments.py --stage combo    --backbone convnext_tiny --combo "mix=cutmix loss=focal ema_decay=0.999"  # T10
 python run_experiments.py --stage inference --backbone convnext_tiny           # I00..I08 + độ trễ
-python run_experiments.py --stage final    --backbone convnext_tiny --combo "<xem report>" --seeds 0,1,2
+python run_experiments.py --stage final    --backbone convnext_tiny --combo "mix=cutmix" --seeds 0,1,2   # F01 = T04 + I04 288 + TS
 python make_results.py --backbone convnext_tiny                # results.xlsx + hình
 ```
 

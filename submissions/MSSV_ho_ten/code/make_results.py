@@ -216,23 +216,34 @@ def main():
         for x in ax: x.grid(alpha=.3)
         fig.tight_layout(); fig.savefig(FIGS / "backbones_tradeoff.png", dpi=110); plt.close(fig)
     if len(tdf) > 1:
-        t = tdf[tdf.exp_id != "T00"]
-        fig, ax = plt.subplots(figsize=(9, 4))
-        ax.barh([f"{r.exp_id} {r.diff_vs_T00[:38]}" for _, r in t.iterrows()], t.delta_f1_vs_T00,
+        # T01/T02 (khởi tạo) lệch hàng chục lần các trục khác: vẽ riêng để thấy được chênh lệch nhỏ
+        t = tdf[~tdf.exp_id.isin(["T00", "T01", "T02"])]
+        fig, ax = plt.subplots(figsize=(9, 4.2))
+        ax.barh([f"{r.exp_id} {r.diff_vs_T00[:40]}" for _, r in t.iterrows()], t.delta_f1_vs_T00,
                 color=["tab:green" if v > 0 else "tab:red" for v in t.delta_f1_vs_T00])
         if np.isfinite(noise):
-            ax.axvspan(-noise, noise, color="gray", alpha=.25, label=f"± std seed của T00 ({noise:.4f})")
-            ax.legend()
+            d = noise * np.sqrt(2)
+            ax.axvspan(-d, d, color="gray", alpha=.25, label=f"± std của hiệu 2 lần chạy 1 seed (√2·{noise:.4f})")
+            ax.legend(loc="lower right", fontsize=8)
         ax.axvline(0, color="k", lw=.8); ax.set_xlabel("Δ macro-F1 val so với T00")
-        ax.set_title(f"Ablation công thức huấn luyện ({a.backbone}, 1 seed)"); ax.grid(alpha=.3, axis="x")
+        extra = "; ".join(f"{r.exp_id}: {r.delta_f1_vs_T00:+.3f}" for _, r in tdf[tdf.exp_id.isin(["T01", "T02"])].iterrows())
+        ax.set_title(f"Ablation công thức ({a.backbone}, 1 seed). Trục khởi tạo, ngoài khung: {extra}", fontsize=10)
+        ax.grid(alpha=.3, axis="x")
         fig.tight_layout(); fig.savefig(FIGS / "training_ablation.png", dpi=110); plt.close(fig)
     if len(idf) and "lat_p50_ms" in idf:
-        fig, ax = plt.subplots(figsize=(8, 5))
-        for _, r in idf.dropna(subset=["lat_p50_ms"]).iterrows():
-            ax.scatter(r.lat_p50_ms, r.val_macro_f1)
-            ax.annotate(r.method.replace("_", " ")[:28], (r.lat_p50_ms, r.val_macro_f1), fontsize=7)
-        ax.set_xscale("log"); ax.set_xlabel("độ trễ batch 1 p50 (ms, log)"); ax.set_ylabel("macro-F1 val")
-        ax.set_title("Suy luận: đánh đổi độ chính xác – độ trễ (T4)"); ax.grid(alpha=.3)
+        d = idf.dropna(subset=["lat_p50_ms"])
+        d = d[~d.method.str.contains("fuseBN")]  # gộp BN đo trên ResNet-50/EfficientNet (model khác), xem sheet Latency
+        fig, ax = plt.subplots(figsize=(9, 5.5))
+        colors = {"I00": "k", "I01": "tab:blue", "I02": "tab:orange", "I04": "tab:green", "I05": "tab:red",
+                  "I06": "tab:purple", "I07": "tab:brown", "I08": "tab:gray"}
+        for _, r in d.iterrows():
+            ax.scatter(r.lat_p50_ms, r.val_macro_f1, color=colors.get(r.exp_id, "c"), s=40, zorder=3)
+        for k, (_, r) in enumerate(d.sort_values("lat_p50_ms").iterrows()):
+            label = r.method.split(" [")[0].replace("_", " ") + (f" [{r.aggregate}]" if r.aggregate in ("prob", "logit") and r.K_forward > 1 and "crop" not in r.method else "")
+            ax.annotate(label, (r.lat_p50_ms, r.val_macro_f1), xytext=(6, -10 + (k % 4) * 7), textcoords="offset points", fontsize=7)
+        ax.set_xscale("log"); ax.set_xlabel("độ trễ batch 1 p50 (ms, log), T4 FP32 trừ I08")
+        ax.set_ylabel("macro-F1 val"); ax.set_ylim(d.val_macro_f1.min() - 0.002, d.val_macro_f1.max() + 0.002)
+        ax.set_title("Suy luận (ConvNeXt-T T00): đánh đổi độ chính xác – độ trễ"); ax.grid(alpha=.3)
         fig.tight_layout(); fig.savefig(FIGS / "inference_tradeoff.png", dpi=110); plt.close(fig)
     for gid, (_, _, test) in per_class.items():
         cm = sum(r["confusion"] for r in test)
