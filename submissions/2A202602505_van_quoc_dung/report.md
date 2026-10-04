@@ -379,7 +379,8 @@ này trừ khi ước lượng lại thống kê BN (mục 3) hoặc đổi augm
   Quyết định chỉ dựa trên macro-F1 val; các file test bị loại được giữ nguyên, **không tính chỉ số, không mở**, để
   giảng viên kiểm tra nếu cần (sha256 `F01_seed0_test.csv` = `43897454…6264af41`, `F01uncal_seed0_test.csv` = `3808b1a6…7d02d954e`; giá trị đầy đủ trong `tables/discarded_sha256.txt`). Để lỗi này không thể lặp lại, `run_experiments.py --stage final --combo auto` giờ tự
   chọn công thức có macro-F1 val cao nhất trong T00…T10 và **từ chối chạy (kể cả test) nếu còn thiếu bất kỳ kết quả val
-  nào** (`select_final_recipe`, ghi `tables/final_recipe_choice.json`); với dữ liệu hiện có nó chọn đúng T04 (CutMix).
+  nào** (`select_final_recipe`, ghi `tables/final_recipe_choice.json`); với dữ liệu hiện có nó chọn đúng T04 (CutMix)
+  — tệp đó được ghi khi chạy lại notebook chính (05/10, 05:27 UTC+7) và chỉ xác nhận lại lựa chọn gốc của commit `7c1f9ca`.
 - Thí nghiệm thất bại/không giúp: huấn luyện từ đầu, ensemble, TTA nhiều crop, kết hợp T10, CE có trọng số.
 - **Việc tiếp theo** nếu có thêm một ngày: chạy 3–5 fold (theo địa điểm nếu có metadata); 3 seed cho các ablation hứa
   hẹn (CutMix, EMA); công thức riêng cho mạng BN; chưng cất ConvNeXt-T sang MobileNetV3 cho thiết bị biên; đánh giá trên
