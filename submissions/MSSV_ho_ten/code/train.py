@@ -306,7 +306,7 @@ def run(cfg: Config) -> dict:
     rd = run_dir(cfg)
     if (rd / "summary.json").exists():
         print(f"[{cfg.exp_id} seed{cfg.seed}] đã có kết quả, bỏ qua")
-        return json.loads((rd / "summary.json").read_text())
+        return json.loads((rd / "summary.json").read_text(encoding="utf-8"))
     set_seed(cfg.seed)
     rd.mkdir(parents=True, exist_ok=True)
     meta = {"config": dataclasses.asdict(cfg), "versions": versions()}
@@ -339,7 +339,7 @@ def run(cfg: Config) -> dict:
     scaler = torch.amp.GradScaler("cuda", enabled=cfg.amp and device.type == "cuda")
     ema = EMA(model, cfg.ema_decay) if cfg.ema_decay else None
     rng = np.random.default_rng(cfg.seed)
-    (rd / "config.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False, default=str))
+    (rd / "config.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
 
     # 5. vòng epoch
     history, lr_steps, best, best_state, epoch_times = [], [], None, None, []
@@ -378,7 +378,7 @@ def run(cfg: Config) -> dict:
     fv, yv, zv, _ = evaluate(model_eval, val_loader, None, device, cfg.amp)
     np.save(rd / "val_logits.npy", zv)
     np.save(rd / "val_labels.npy", yv)
-    (rd / "val_filenames.txt").write_text("\n".join(fv))
+    (rd / "val_filenames.txt").write_text("\n".join(fv), encoding="utf-8")
     save_predictions(pred_path(cfg, "val"), fv, yv, softmax(zv))
     mv = metrics_from_logits(yv, zv)
 
@@ -412,7 +412,7 @@ def run(cfg: Config) -> dict:
     if ema:
         best_raw = max(h["val_macro_f1_raw"] for h in history)
         summary["val_macro_f1_raw_best"] = best_raw
-    (rd / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False, default=str))
+    (rd / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
     del model, model_eval, optimizer, ema
     if device.type == "cuda":
         torch.cuda.empty_cache()
@@ -438,7 +438,7 @@ def evaluate_split(cfg: Config, split: str, model=None, device=None) -> dict:
     f, y, z, _ = evaluate(model, loader, None, device, cfg.amp)
     np.save(rd / f"{split}_logits.npy", z)
     np.save(rd / f"{split}_labels.npy", y)
-    (rd / f"{split}_filenames.txt").write_text("\n".join(f))
+    (rd / f"{split}_filenames.txt").write_text("\n".join(f), encoding="utf-8")
     save_predictions(pred_path(cfg, split), f, y, softmax(z))
     return metrics_from_logits(y, z)
 

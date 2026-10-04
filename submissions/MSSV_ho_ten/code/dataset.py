@@ -165,7 +165,7 @@ class ImageCache:
             self.array = arr
 
     def get(self, filename: str) -> torch.Tensor:
-        a = np.ascontiguousarray(self.array[self.index[filename]])
+        a = np.array(self.array[self.index[filename]], copy=True)  # bản sao ghi được (memmap chỉ đọc)
         return torch.from_numpy(a).permute(2, 0, 1)  # uint8 CHW
 
 
