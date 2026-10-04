@@ -103,8 +103,7 @@ def main():
     tdf = pd.DataFrame(rows)
 
     # ---------------- Inference / Latency ----------------
-    idf = pd.read_csv(TABLES / "inference.csv") if (TABLES / "inference.csv").exists() else pd.DataFrame()
-    ldf = pd.read_csv(TABLES / "latency.csv") if (TABLES / "latency.csv").exists() else pd.DataFrame()
+    idf, ldf = read_table("inference.csv"), read_table("latency.csv")
 
     # ---------------- Final ----------------
     P = SUB / "predictions"
@@ -203,7 +202,7 @@ def main():
     print("đã ghi", out)
 
     # ---------------- Figures ----------------
-    if len(bdf):
+    if len(bdf) and bdf.latency_b1_fp32_p50_ms.notna().all():
         fig, ax = plt.subplots(1, 2, figsize=(11, 4))
         for _, r in bdf.iterrows():
             ax[0].scatter(r.latency_b1_fp32_p50_ms, r.val_macro_f1, s=40 + 4 * r.params_M)
@@ -250,6 +249,11 @@ def main():
     misclassified_grid()
     json.dump({k: {m: list(v) for m, v in st.items()} for k, st in final_stats.items()},
               open(TABLES / "final_stats.json", "w", encoding="utf-8"), indent=2)
+
+
+def read_table(name: str) -> pd.DataFrame:
+    f = TABLES / name
+    return pd.read_csv(f) if f.exists() and f.stat().st_size > 2 else pd.DataFrame()
 
 
 def dataclass_diff(base: dict, cfg: dict) -> dict:

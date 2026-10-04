@@ -452,6 +452,55 @@ def stage_inference(backbone: str):
     print("Chọn:", sel)
 
 
+@torch.no_grad()
+def recalibrate_bn(model, loader, dev, max_batches: int | None = None):
+    """Ước lượng lại running_mean/var của mọi BatchNorm bằng ảnh TRAIN qua transform lúc đánh giá
+    (center crop, không augmentation). Không gradient, không dùng val/test. Trung bình tích luỹ."""
+    bns = [m for m in model.modules() if isinstance(m, torch.nn.modules.batchnorm._BatchNorm)]
+    for m in bns:
+        m.reset_running_stats()
+        m.momentum = None
+    model.train()
+    for i, (x, _, _) in enumerate(loader):
+        if max_batches and i >= max_batches:
+            break
+        with torch.autocast("cuda", dtype=torch.float16, enabled=dev.type == "cuda"):
+            model(x.to(dev).contiguous(memory_format=torch.channels_last))
+    model.eval()
+    return len(bns)
+
+
+def stage_bnrecal():
+    """Chẩn đoán: mạng có BN (ResNet-50, EfficientNet-B0, MobileNetV3) lệch train/val lớn hơn mạng
+    LayerNorm. Giả thuyết: thống kê BN học trên ảnh RandomResizedCrop (phóng to) không khớp ảnh
+    center-crop lúc đánh giá. Kiểm tra: ước lượng lại thống kê BN trên ảnh train với transform đánh giá."""
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    rows = []
+    for e, bb in BACKBONES:
+        c = base_cfg(exp_id=e, backbone=bb, seed=0)
+        if not (TR.run_dir(c) / "best.pt").exists():
+            continue
+        m = TR.load_model_from_run(c, dev).to(memory_format=torch.channels_last)
+        if not any(isinstance(x, torch.nn.modules.batchnorm._BatchNorm) for x in m.modules()):
+            continue
+        tr, va, _ = D.load_split(c.labels_dir, 0)
+        cache = D.get_cache(c.images_dir, c.cache_path)
+        ev = D.build_transforms(False, c.img_size)
+        vl = D.make_loader(va, c.images_dir, ev, 128, False, None, 2, cache)
+        tl = D.make_loader(tr, c.images_dir, ev, 128, False, None, 2, cache)
+        _, y, z0, _ = TR.evaluate(m, vl, None, dev)
+        n = recalibrate_bn(m, tl, dev)
+        _, _, z1, _ = TR.evaluate(m, vl, None, dev)
+        r0, r1 = metrics_row(y, TR.softmax(z0)), metrics_row(y, TR.softmax(z1))
+        rows.append({"exp_id": e, "backbone": bb, "n_bn_layers": n,
+                     "val_macro_f1_before": r0["val_macro_f1"], "val_macro_f1_after": r1["val_macro_f1"],
+                     "val_top1_before": r0["val_top1"], "val_top1_after": r1["val_top1"]})
+        print(rows[-1], flush=True)
+        del m
+    TABLES.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(rows).to_csv(TABLES / "bn_recalibration.csv", index=False)
+
+
 _FP32_CACHE = {}
 
 
@@ -544,7 +593,7 @@ def _agg_logits(L: dict, views: list[str], space: str) -> np.ndarray:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True,
-                    choices=["eda", "sanity", "backbones", "training", "combo", "inference", "final"])
+                    choices=["eda", "sanity", "backbones", "training", "combo", "inference", "final", "bnrecal"])
     ap.add_argument("--backbone", default="resnet50")
     ap.add_argument("--only", default="")
     ap.add_argument("--combo", default="")
@@ -564,6 +613,8 @@ def main():
         stage_combo(a.backbone, parse_combo(a.combo))
     elif a.stage == "inference":
         stage_inference(a.backbone)
+    elif a.stage == "bnrecal":
+        stage_bnrecal()
     elif a.stage == "final":
         stage_final(a.backbone, parse_combo(a.combo), tuple(int(s) for s in a.seeds.split(",")))
     print(f"stage {a.stage} xong sau {(time.time() - t0) / 60:.1f} phút")
