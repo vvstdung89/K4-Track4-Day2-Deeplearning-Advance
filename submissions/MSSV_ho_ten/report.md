@@ -216,7 +216,8 @@ Loader trả ảnh gốc 256 đã chuẩn hoá; các view được tạo trên G
 
 **Mốc so sánh**: T00 (công thức nền) + I00 (1-view center crop 224), không temperature scaling, cùng 3 seed.
 
-Test chạy **đúng một lần cho mỗi seed** trên toàn bộ 3.507 ảnh test. Mọi số dưới đây là kết quả của
+Test chạy **đúng một lần cho mỗi seed** của cấu hình chung kết và của mốc, trên toàn bộ 3.507 ảnh test (một lần
+chạy test của cấu hình kết hợp đã loại được nêu rõ ở mục 8). Mọi số dưới đây là kết quả của
 `python eval.py score` / `grade` (thư mục `eval_out/`), tính lại từ `predictions/*.csv`:
 
 | | F01 (chung kết) | T00 + I00 (mốc) | Δ |
@@ -304,10 +305,21 @@ này trừ khi ước lượng lại thống kê BN (mục 3) hoặc đổi augm
 - **Công thức nền không công bằng hoàn toàn với mạng BN**: RandomResizedCrop scale 0,08 khiến thống kê BN lệch (mục 3);
   một công thức khác (scale ≥ 0,3, hoặc ước lượng lại BN) có thể đổi thứ hạng backbone. ResNet-50 `a1_in1k` có lẽ cần
   LR/epoch lớn hơn.
-- **Thứ tự tham lam**: cấu hình kết hợp T10 được định nghĩa trước khi biết kết quả của nó; do quy trình tự động xếp hàng
-  sẵn, test của F01-kết hợp seed 0 đã được tính một lần trước khi cấu hình chung kết được đổi sang T04 dựa trên **val**
-  của T10. Các file đó được giữ nguyên, **không mở**, trong `discarded_F01_combo/` để minh bạch; quyết định đổi chỉ dựa
-  trên macro-F1 val (T10 0,9651 < T04 0,9703).
+- **Thứ tự tham lam và một lần chạy test bị loại (đã xử lý).** Cấu hình kết hợp T10 được định nghĩa trước khi biết kết
+  quả của nó, và stage chung kết đã được xếp hàng tự động ngay sau T10 với giả định dùng T10. Dòng thời gian (giờ file
+  trên Google Drive và giờ commit git, UTC+7, 05/10/2026):
+
+  | Thời điểm | Sự kiện |
+  |---|---|
+  | 00:45 | T10 xong, `runs/T10/seed0/summary.json`: macro-F1 **val** 0,9651 (< T00 0,9676 < T04 0,9703) |
+  | 00:46 | script xếp hàng sẵn tự chạy test cho F01-kết hợp seed 0 (`F01_seed0_test.csv`, ...) |
+  | 00:54 | dừng stage chung kết; chuyển nguyên các file đó vào `discarded_F01_combo/` |
+  | 00:55 | commit `7c1f9ca` ghi lý do đổi: T10 kém hơn T00 **trên val** → chung kết dùng T04 |
+
+  Quyết định chỉ dựa trên macro-F1 val; các file test bị loại được giữ nguyên, **không tính chỉ số, không mở**, để
+  giảng viên kiểm tra nếu cần. Để lỗi này không thể lặp lại, `run_experiments.py --stage final --combo auto` giờ tự
+  chọn công thức có macro-F1 val cao nhất trong T00…T10 và **từ chối chạy (kể cả test) nếu còn thiếu bất kỳ kết quả val
+  nào** (`select_final_recipe`, ghi `tables/final_recipe_choice.json`); với dữ liệu hiện có nó chọn đúng T04 (CutMix).
 - Thí nghiệm thất bại/không giúp: huấn luyện từ đầu, ensemble, TTA nhiều crop, kết hợp T10, CE có trọng số.
 - **Việc tiếp theo** nếu có thêm một ngày: chạy 3–5 fold (theo địa điểm nếu có metadata); 3 seed cho các ablation hứa
   hẹn (CutMix, EMA); công thức riêng cho mạng BN; chưng cất ConvNeXt-T sang MobileNetV3 cho thiết bị biên; đánh giá trên

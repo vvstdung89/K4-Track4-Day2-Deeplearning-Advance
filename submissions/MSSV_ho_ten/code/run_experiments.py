@@ -7,7 +7,8 @@ Các stage (chạy theo thứ tự, mỗi stage chạy tiếp được nếu Col
     python run_experiments.py --stage training  --backbone convnext_tiny
     python run_experiments.py --stage combo     --backbone convnext_tiny --combo "mix=cutmix loss=ls"
     python run_experiments.py --stage inference --backbone convnext_tiny
-    python run_experiments.py --stage final     --backbone convnext_tiny --combo "..." [--method ...]
+    python run_experiments.py --stage final     --backbone convnext_tiny --combo auto
+        (--combo auto: chọn công thức tốt nhất trên val, từ chối chạy nếu còn thiếu ablation nào)
 
 Đường dẫn lấy từ biến môi trường:
     LAB_SUB   thư mục bài nộp (runs/, predictions/, curves/, figures/, tables/ nằm trong đó)
@@ -545,7 +546,37 @@ def _lat_cols(r: dict) -> dict:
 # --------------------------------------------------------------------------- #
 # Bước 4: chung kết (>= 3 seed), test MỘT lần mỗi seed
 # --------------------------------------------------------------------------- #
-def stage_final(backbone: str, combo: dict, seeds=(0, 1, 2), method: dict | None = None):
+def select_final_recipe(backbone: str) -> dict:
+    """Chọn công thức chung kết THUẦN TRÊN VAL: lần chạy có macro-F1 val cao nhất trong T00, T01..T09 và T10
+    (seed 0). Từ chối nếu còn thiếu bất kỳ lần chạy nào — chung kết (và test) không được bắt đầu trước khi mọi
+    kết quả val cần để quyết định đã có. Trả về các trường khác T00 của công thức thắng, ghi lý do ra
+    tables/final_recipe_choice.json."""
+    ids = ["T00"] + [e for e, *_ in TRAINING] + ["T10"]
+    summ, missing = {}, []
+    for e in ids:
+        f = TR.run_dir(base_cfg(exp_id=e, backbone=backbone, seed=0)) / "summary.json"
+        if f.exists():
+            summ[e] = json.loads(f.read_text(encoding="utf-8"))
+        else:
+            missing.append(e)
+    if missing:
+        raise RuntimeError(f"chưa đủ kết quả val để chọn công thức chung kết, thiếu: {missing}")
+    best = max(ids, key=lambda e: (summ[e]["val_macro_f1"], -ids.index(e)))  # hoà: lấy công thức đơn giản hơn
+    base = summ["T00"]["config"]
+    skip = set(IDENTITY_FIELDS)
+    combo = {k: v for k, v in summ[best]["config"].items() if k not in skip and base.get(k) != v}
+    TABLES.mkdir(parents=True, exist_ok=True)
+    json.dump({"rule": "macro-F1 val cao nhất (seed 0) trong T00..T10; hoà lấy công thức đơn giản hơn",
+               "chosen": best, "combo": combo, "decided_at_utc": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
+               "candidates": {e: summ[e]["val_macro_f1"] for e in ids}},
+              open(TABLES / "final_recipe_choice.json", "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+    print(f"công thức chung kết chọn trên val: {best} {combo} (macro-F1 val {summ[best]['val_macro_f1']:.4f})")
+    return combo
+
+
+def stage_final(backbone: str, combo: dict | str, seeds=(0, 1, 2), method: dict | None = None):
+    if combo == "auto":
+        combo = select_final_recipe(backbone)
     dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     method = method or json.loads((TABLES / "inference_choice.json").read_text(encoding="utf-8"))
     views, space = method["views"], method["aggregate"]
@@ -627,7 +658,8 @@ def main():
     elif a.stage == "bnrecal":
         stage_bnrecal()
     elif a.stage == "final":
-        stage_final(a.backbone, parse_combo(a.combo), tuple(int(s) for s in a.seeds.split(",")))
+        combo = "auto" if a.combo.strip() == "auto" else parse_combo(a.combo)
+        stage_final(a.backbone, combo, tuple(int(s) for s in a.seeds.split(",")))
     print(f"stage {a.stage} xong sau {(time.time() - t0) / 60:.1f} phút")
 
 

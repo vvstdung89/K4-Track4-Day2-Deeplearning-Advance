@@ -11,6 +11,7 @@ Bài nộp của **MSSV_ho_ten** (đổi tên thư mục thành `<mssv>_<ho_ten_
 | Hình cho báo cáo (EDA, kiểm tra pipeline, đánh đổi, ma trận nhầm lẫn, ảnh lỗi) | [`figures/`](figures) |
 | Bảng trung gian (kiểm tra chia, suy luận, độ trễ, hiệu chuẩn) | [`tables/`](tables) |
 | Kết quả `eval.py score/grade` | [`eval_out/`](eval_out) |
+| Kết quả test của cấu hình kết hợp đã loại (không mở, xem report mục 8) | `discarded_F01_combo/` (trên Drive) |
 | Code | [`code/`](code) |
 
 ## Chạy lại
@@ -33,9 +34,17 @@ python run_experiments.py --stage bnrecal                      # chẩn đoán B
 python run_experiments.py --stage training --backbone convnext_tiny            # T00..T09
 python run_experiments.py --stage combo    --backbone convnext_tiny --combo "mix=cutmix loss=focal ema_decay=0.999"  # T10
 python run_experiments.py --stage inference --backbone convnext_tiny           # I00..I08 + độ trễ
-python run_experiments.py --stage final    --backbone convnext_tiny --combo "mix=cutmix" --seeds 0,1,2   # F01 = T04 + I04 288 + TS
+python run_experiments.py --stage final    --backbone convnext_tiny --combo auto --seeds 0,1,2   # chọn công thức tốt nhất trên val (= T04 CutMix) + I04 288 + TS
 python make_results.py --backbone convnext_tiny                # results.xlsx + hình
 ```
+
+`--combo auto` từ chối chạy nếu còn thiếu kết quả val của bất kỳ ablation nào (T00–T10), nên test không thể bị chạy
+trước khi quyết định xong (xem report.md mục 8).
+
+**Windows:** `eval.py` gốc ghi file JSON có tiếng Việt mà không chỉ định encoding, nên trên Windows (cp1252)
+`eval.py score/grade` thoát với mã 2 và 2 test trong `tests/test_eval.py` thất bại (cả trên nhánh `main`). Không sửa
+`eval.py`; chạy với `set PYTHONUTF8=1` (cmd) hoặc `$env:PYTHONUTF8=1` (PowerShell) thì cả 38 test của repo đều qua.
+Trên Colab/Linux không bị.
 
 Chạy một cấu hình đơn lẻ: `python train.py --set exp_id=B01 backbone=resnet50 seed=0 epochs=10`.
 
