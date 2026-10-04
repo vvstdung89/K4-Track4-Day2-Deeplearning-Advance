@@ -317,7 +317,7 @@ này trừ khi ước lượng lại thống kê BN (mục 3) hoặc đổi augm
   | 00:55 | commit `7c1f9ca` ghi lý do đổi: T10 kém hơn T00 **trên val** → chung kết dùng T04 |
 
   Quyết định chỉ dựa trên macro-F1 val; các file test bị loại được giữ nguyên, **không tính chỉ số, không mở**, để
-  giảng viên kiểm tra nếu cần. Để lỗi này không thể lặp lại, `run_experiments.py --stage final --combo auto` giờ tự
+  giảng viên kiểm tra nếu cần (sha256 `F01_seed0_test.csv` = `43897454…6264af41`, `F01uncal_seed0_test.csv` = `3808b1a6…7d02d954e`; giá trị đầy đủ trong `tables/discarded_sha256.txt`). Để lỗi này không thể lặp lại, `run_experiments.py --stage final --combo auto` giờ tự
   chọn công thức có macro-F1 val cao nhất trong T00…T10 và **từ chối chạy (kể cả test) nếu còn thiếu bất kỳ kết quả val
   nào** (`select_final_recipe`, ghi `tables/final_recipe_choice.json`); với dữ liệu hiện có nó chọn đúng T04 (CutMix).
 - Thí nghiệm thất bại/không giúp: huấn luyện từ đầu, ensemble, TTA nhiều crop, kết hợp T10, CE có trọng số.

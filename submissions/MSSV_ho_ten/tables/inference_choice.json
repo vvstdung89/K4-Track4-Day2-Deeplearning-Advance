@@ -1,0 +1,10 @@
+{
+  "method": "I04_res288",
+  "views": [
+    "full288"
+  ],
+  "aggregate": "-",
+  "val_macro_f1": 0.9755836191529588,
+  "I00_val_macro_f1": 0.9675884081376529,
+  "rule": "macro-F1 val cao nhất trong I00/I01/I02/I04 trên model T00 seed0; hoà thì ít forward hơn"
+}

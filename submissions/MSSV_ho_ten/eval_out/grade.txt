@@ -1,0 +1,14 @@
+## Tự chấm RUBRIC mục I (đề xuất; giảng viên xác nhận)
+
+| Mã | Tiêu chí | Điểm | Tối đa | Chi tiết |
+|---|---|---|---|---|
+| I1 | Top-1 accuracy test | 7 | 7 | 97.92% (mean 3 seed) |
+| I2 | Macro-F1 cải thiện so với mốc | 4 | 5 | final 0.9750, mốc 0.9706, Δ=+0.0044, s=0.0026 |
+| I3 | Recall hai lớp khó | 4 | 4 | Chinee Apple 95.1% (mốc 88.5%), Snake Weed 94.6% (mốc 88.8%) |
+| I4a | ECE sau TS < ECE trước | 1 | 1 | trước 0.0344, sau 0.0072 |
+| I4b | Chênh macro-F1 val/test <= 0.02 | 1 | 1 | val 0.9719, test 0.9750, chênh 0.0031 |
+| I5 | Cấu hình thời gian thực | 2 | 2 | p95 = 17.7 ms (ngân sách 100 ms), đo đúng cách |
+
+**Tổng các ý đã chấm: 19 / 20** (phần I tối đa 20).
+
+Ngưỡng điểm là TẠM THỜI (xem khối hằng số đầu file eval.py và RUBRIC.md mục I).
