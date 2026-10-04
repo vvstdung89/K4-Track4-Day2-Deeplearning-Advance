@@ -1,6 +1,8 @@
 # Lab Day 2 — DeepWeeds: backbone, công thức huấn luyện, suy luận
 
-Bài nộp của **MSSV_ho_ten** (đổi tên thư mục thành `<mssv>_<ho_ten_khong_dau>` trước khi nộp).
+Bài nộp của **Văn Quốc Dũng — MSSV 2A202602505** (thư mục `2A202602505_van_quoc_dung`).
+
+*Ghi chú:* các thí nghiệm được chạy khi thư mục còn tên tạm `MSSV_ho_ten`, nên các log đã chạy (`code/lab_day2_run.ipynb`, `eval_out/score_*.txt`) còn đường dẫn cũ; nội dung không đổi.
 
 | Sản phẩm | Vị trí |
 |---|---|
