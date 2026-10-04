@@ -101,6 +101,17 @@ def alias_run(src: Config, dst: Config, note: str) -> dict:
     return summ
 
 
+def find_same_run(cfg: Config) -> Config | None:
+    """Một lần chạy B/T đã xong có cùng công thức và seed với cfg (để dùng lại, không train lại)."""
+    for f in sorted(Path(cfg.out_dir).glob(f"[BT]*/seed{cfg.seed}/summary.json")):
+        c = Config(**json.loads(f.read_text(encoding="utf-8"))["config"])
+        c = dataclasses.replace(c, out_dir=cfg.out_dir, pred_dir=cfg.pred_dir, curves_dir=cfg.curves_dir,
+                                images_dir=cfg.images_dir, labels_dir=cfg.labels_dir, cache_path=cfg.cache_path)
+        if same_recipe(c, cfg) and not json.loads(f.read_text(encoding="utf-8")).get("alias_of"):
+            return c
+    return None
+
+
 def parse_combo(s: str | None) -> dict:
     return TR.parse_overrides(s.split()) if s else {}
 
@@ -541,7 +552,6 @@ def stage_final(backbone: str, combo: dict, seeds=(0, 1, 2), method: dict | None
     if space not in ("prob", "logit"):
         space = "prob"
     desc = "final"
-    combo_src = base_cfg(exp_id="T10", backbone=backbone, seed=0, **combo)
     rows = []
     for seed in seeds:
         # mốc T00 (+ I00): 1-view, không temperature scaling
@@ -551,8 +561,9 @@ def stage_final(backbone: str, combo: dict, seeds=(0, 1, 2), method: dict | None
             TR.evaluate_split(t00, "test")
         # chung kết F01: công thức kết hợp + suy luận đã chọn + temperature scaling (T khớp trên val)
         f01 = base_cfg(exp_id="F01", backbone=backbone, desc=desc, seed=seed, **combo)
-        if seed == 0 and (TR.run_dir(combo_src) / "summary.json").exists() and same_recipe(combo_src, f01):
-            alias_run(combo_src, f01, "F01 seed0 trùng cấu hình với T10 (kết hợp) seed0")
+        src = find_same_run(f01)
+        if src is not None:
+            alias_run(src, f01, f"F01 seed{seed} trùng cấu hình với {src.exp_id} seed{seed}")
         else:
             TR.run(f01)
         rd = TR.run_dir(f01)
