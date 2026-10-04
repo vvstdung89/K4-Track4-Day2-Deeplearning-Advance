@@ -1,0 +1,4 @@
+{'exp_id': 'B01', 'backbone': 'resnet50', 'n_bn_layers': 53, 'val_macro_f1_before': 0.7855650356322597, 'val_macro_f1_after': 0.8221123426683958, 'val_top1_before': 0.8449014567266495, 'val_top1_after': 0.866609540131391}
+{'exp_id': 'B04', 'backbone': 'efficientnet_b0', 'n_bn_layers': 49, 'val_macro_f1_before': 0.7232019695008749, 'val_macro_f1_after': 0.8582885329082225, 'val_top1_before': 0.8017709225935447, 'val_top1_after': 0.8940302770636961}
+{'exp_id': 'B05', 'backbone': 'mobilenetv3', 'n_bn_layers': 46, 'val_macro_f1_before': 0.5998166428504704, 'val_macro_f1_after': 0.8703946222967311, 'val_top1_before': 0.7206512425021423, 'val_top1_after': 0.9031705227077977}
+stage bnrecal xong sau 3.7 phút

@@ -1,6 +1,7 @@
 # Báo cáo Lab Day 2 — Backbone, công thức huấn luyện và suy luận trên DeepWeeds
 
-*Fold 0 chia sẵn · Google Colab T4 · mọi con số truy ngược được tới `results.xlsx`, `runs/*/summary.json`,
+*Fold 0 chia sẵn · Google Colab T4 · mọi con số truy ngược được tới `results.xlsx`, log từng lần chạy trong
+`run_logs/<exp_id>/seed<k>/` (`config.json`, `history.csv` theo epoch, `summary.json`) và `run_logs/stdout/*.log`,
 `tables/*` và kết quả `eval.py` trong `eval_out/`.*
 
 ## 1. Tóm tắt
@@ -14,8 +15,10 @@ test chạy một lần mỗi seed.
 **Cấu hình tốt nhất:** ConvNeXt-T + CutMix, suy luận 1 lượt ở 288 px trên ảnh đầy đủ, temperature scaling →
 **macro-F1 test 0,9750 ± 0,0026, top-1 97,92% ± 0,20%** (3 seed), recall Chinee apple / Snake weed 95,1% / 94,6%,
 ECE 0,007, p95 17,7 ms (batch 1, T4). Mốc T00 + 1-view: 0,9706 ± 0,0020 → cải thiện **+0,0044** (1,7 lần std).
-**Kết luận chính:** khởi tạo tiền huấn luyện và backbone quyết định gần như toàn bộ chất lượng; độ phân giải kiểm tra
-là cải thiện rẻ nhất; các thay đổi công thức (augmentation, loss, EMA) chỉ cỡ nhiễu seed và không cộng dồn.
+**Kết luận chính:** khởi tạo tiền huấn luyện và backbone quyết định gần như toàn bộ chất lượng; phần cải thiện so với
+mốc đến từ **độ phân giải kiểm tra** (FixRes), còn CutMix — lý do chọn công thức chung kết — **không có tác dụng khi đo
+lại với 3 seed** (macro-F1 val 1-view 0,9680 so với 0,9684 của mốc); các thay đổi công thức khác chỉ cỡ nhiễu seed và
+không cộng dồn.
 
 ## 2. Dữ liệu và thiết lập
 
@@ -31,14 +34,20 @@ là cải thiện rẻ nhất; các thay đổi công thức (augmentation, loss
 | Tỉ lệ | 59,97% | 20,00% | 20,03% | |
 
 Giao từng cặp (train∩val, train∩test, val∩test) theo tên file đều **rỗng**; hợp ba tập đúng **17.509** ảnh;
-**không thiếu file** nào trong thư mục ảnh. Mọi ảnh 256×256 RGB.
+**không thiếu file** nào trong thư mục ảnh. 300 ảnh lấy mẫu ngẫu nhiên đều là RGB 256×256 (loader vẫn resize nếu gặp
+ảnh khác cỡ).
+
+![Phân bố lớp](figures/eda_class_distribution.png)
 
 **EDA** (`figures/eda_class_distribution.png`, `figures/eda_samples.png`). Số ảnh đếm được khớp Table 1 của bài báo ở
 7/9 lớp; lệch 1 ảnh ở Chinee apple (1.126 so với 1.125) và Lantana (1.063 so với 1.064), tổng vẫn 17.509 (có lẽ một ảnh
 được gán lại nhãn trong bản phát hành). `Negatives` chiếm 9.106 ảnh (52,0%), các loài cỏ 1.009–1.126 ảnh; tỉ lệ lớp
-lớn nhất / nhỏ nhất ≈ 9,0. Vì vậy top-1 bị `Negatives` kéo cao, **macro-F1 (9 lớp) là chỉ số chính**. Nhìn ảnh mẫu:
-Chinee apple và Snake weed đều là lá xanh nhỏ trên nền cỏ/đất lẫn lộn, khó phân biệt bằng mắt; `Negatives` rất đa dạng
-(cỏ khác, đất, đá, cây bụi), nên là lớp "phần còn lại" khó mô hình hoá.
+lớn nhất / nhỏ nhất ≈ 9,0. Vì vậy top-1 bị `Negatives` kéo cao, **macro-F1 (9 lớp) là chỉ số chính**.
+Nhìn 4 ảnh mẫu mỗi lớp (`figures/eda_samples.png`): ảnh chụp từ trên xuống ngoài đồng, nền rất lộn xộn (lá khô, cành,
+đá, cỏ khác), nhiều ảnh có **bóng đổ đậm** và **ám màu hồng/tím** (cân bằng trắng của camera), nên ánh sáng/màu thay đổi
+mạnh trong cùng một lớp. Chinee apple (lá bầu dục bóng) và Snake weed (lá xanh đậm hình trứng, nhiều ảnh ám hồng) đều
+là lá xanh cỡ nhỏ lẫn trong nền — dễ nhầm bằng mắt; Parkinsonia có lá kim mảnh trên nền đất trống; `Negatives` rất đa
+dạng (đất, sỏi, bóng râm, các cây khác), là lớp "phần còn lại" khó mô hình hoá.
 
 **Kiểm tra pipeline trước khi chạy thật** (`tables/sanity_checks.json`, `figures/sanity_overfit.png`,
 `figures/aug_check_*.png`): loss CE ban đầu của ResNet-50 với head mới = **2,187** (−ln(1/9) = 2,197); overfit 16 ảnh
@@ -82,10 +91,13 @@ Cùng công thức nền T00, cùng split, seed 0, 10 epoch (sheet `Backbones`, 
 
 **Nhận xét.**
 
+![Backbone: chất lượng, độ trễ, GMAC](figures/backbones_tradeoff.png)
+
 - Khoảng cách rất lớn và **không theo thứ hạng ImageNet**: hai mạng dùng LayerNorm (ConvNeXt-T, DeiT-S) đạt
-  0,95–0,97, ba mạng dùng BatchNorm (ResNet-50, EfficientNet-B0, MobileNetV3) chỉ 0,60–0,79, dù loss train của chúng
-  vẫn giảm đều (đường cong `B01/B04/B05`: train loss 0,26–0,41 nhưng val loss 0,46–0,84, khoảng cách train/val lớn
-  ngay từ đầu, không phải quá khớp muộn).
+  0,95–0,97, ba mạng dùng BatchNorm (ResNet-50, EfficientNet-B0, MobileNetV3) chỉ 0,60–0,79. Đường cong cho thấy hai
+  kiểu lỗi khác nhau: **EfficientNet-B0 và MobileNetV3** có train loss xuống 0,26 nhưng val loss kẹt ở 0,65–0,84 —
+  khoảng cách train/val lớn ngay từ epoch 2, không phải quá khớp muộn (val loss không tăng dần); **ResNet-50** thì train
+  loss và val loss đi sát nhau nhưng cùng cao (0,41 / 0,46 ở epoch 10) — **chưa khớp** (underfit).
 - **Chẩn đoán** (`tables/bn_recalibration.csv`, stage `bnrecal`): giả thuyết là thống kê BN được học trên ảnh
   `RandomResizedCrop` (scale 0,08–1, tức ảnh bị phóng to mạnh) không khớp ảnh center-crop lúc đánh giá. Ước lượng lại
   running mean/var của mọi lớp BN bằng ảnh **train** đi qua transform đánh giá (không gradient, không dùng val/test),
@@ -97,16 +109,17 @@ Cùng công thức nền T00, cùng split, seed 0, 10 epoch (sheet `Backbones`, 
   | EfficientNet-B0 | 0,7232 | 0,8583 | **+0,135** |
   | MobileNetV3-L | 0,5998 | 0,8704 | **+0,271** |
 
-  Giả thuyết được xác nhận một phần lớn với hai mạng nhẹ: phần lớn khoảng cách đến từ **lệch thống kê BN giữa
-  train-augmentation và eval**, không phải do kiến trúc kém. Với ResNet-50 (tag `a1_in1k`, huấn luyện bằng công thức
-  BCE + LAMB của "ResNet strikes back"), phần còn lại có lẽ do trọng số này cần LR/epoch lớn hơn để tinh chỉnh; 10 epoch
-  với LR 1e-4 là chưa đủ (val F1 vẫn đang tăng chậm ở epoch 10). Đây đúng là câu hỏi 1 của GUIDE mục 9: chênh lệch
+  Kết quả khớp đúng hai kiểu lỗi trên: với hai mạng nhẹ (khoảng cách train/val lớn), phần lớn khoảng cách đến từ
+  **lệch thống kê BN giữa train-augmentation và eval**, không phải do kiến trúc kém; với ResNet-50 (underfit) ước lượng
+  lại BN chỉ giúp +0,037. ResNet-50 dùng tag `a1_in1k` (huấn luyện bằng BCE + LAMB theo "ResNet strikes back"); trọng số
+  này có lẽ cần LR/epoch lớn hơn để tinh chỉnh: val F1 tăng chậm suốt 10 epoch rồi dừng ở 0,785 khi LR cosine về 0. Đây đúng là câu hỏi 1 của GUIDE mục 9: chênh lệch
   ResNet-50 ↔ ConvNeXt-T ở đây **đến từ công thức (cả của trọng số tiền huấn luyện lẫn của ta), không chỉ kiến trúc**.
   Không sửa công thức nền cho riêng mạng BN để giữ so sánh công bằng (N1); ghi nhận là hạn chế.
 - **FLOPs không phải độ trễ** (slide trang 43): EfficientNet-B0/MobileNetV3 ít hơn ConvNeXt-T 10–20 lần về GMAC nhưng ở
   batch 1 trên T4 lại không nhanh hơn (7–9 ms so với 6 ms): với ảnh nhỏ, GPU bị giới hạn bởi số kernel launch/độ sâu
   mạng chứ không bởi phép nhân. Ở batch 32 thì EfficientNet-B0 đạt 415 ảnh/s so với 113 của ConvNeXt-T (sheet Latency).
-  Thời gian train/epoch cũng không tỉ lệ với GMAC (bị chặn bởi nạp dữ liệu trên 2 vCPU).
+  Thời gian train/epoch cũng không tỉ lệ với GMAC (23,9–48,2 s cho 0,22–4,6 GMAC); khi train ResNet-50 GPU chỉ dùng
+  ~50% nên có lẽ bị chặn bởi nạp dữ liệu trên 2 vCPU.
 - **Chọn backbone đi tiếp: ConvNeXt-T.** macro-F1 val cao nhất (0,9676, hơn DeiT-S 0,022 — chênh lệch lớn hơn nhiều
   so với nhiễu seed ước lượng ở mục 4), F1 hai lớp khó cao nhất, độ trễ batch 1 ~6 ms (đủ thời gian thực), chỉ chậm hơn
   DeiT-S ~50% khi train. DeiT-S là lựa chọn dự phòng nếu cần train nhanh hơn.
@@ -141,22 +154,43 @@ Mỗi lần chạy khác T00 đúng **một** yếu tố, seed 0, 10 epoch (shee
 - **Augmentation, loss, EMA, sampler: mọi chênh lệch đều trong khoảng ±0,004.** So với độ lệch chuẩn của hiệu hai lần
   chạy 1 seed (≈ 0,0015): TrivialAugment (+0,0018), label smoothing (+0,0011), focal (+0,0019), sampler cân bằng (+0,0003)
   **không phân biệt được** với T00; CutMix (+0,0027) và EMA (+0,0025) dương cỡ 1,7–1,8 lần nhiễu, CE có trọng số
-  (−0,0035) âm cỡ 2,3 lần nhiễu — có xu hướng nhưng chưa chắc chắn với 1 seed. Đáng chú ý: CutMix cho F1 hai lớp khó cao nhất (0,956 / 0,942),
-  phù hợp kỳ vọng rằng trộn vùng ảnh buộc mô hình nhìn nhiều phần lá hơn. Cùng chiều, ở chung kết 3 seed CutMix
-  cũng làm tăng recall Chinee apple trên test (mục 6).
+  (−0,0035) âm cỡ 2,3 lần nhiễu — chỉ là xu hướng với 1 seed. **Kiểm chứng lại bằng 3 seed** (các lần chạy chung kết
+  F01 = công thức T04, đo cùng cách 1-view 224 trong lúc train, `run_logs/F01/seed*/summary.json`): CutMix cho macro-F1
+  val 0,9703 / 0,9652 / 0,9683 = **0,9680 ± 0,0026**, mốc T00 0,9676 / 0,9697 / 0,9680 = **0,9684 ± 0,0011**: **không
+  có tác dụng**; +0,0027 ở seed 0 là may mắn của seed. Đây là minh hoạ trực tiếp cho N4: một ablation 1 seed vượt
+  1,8 lần nhiễu vẫn có thể không lặp lại.
 - **Loss cho lớp hiếm:** CE có trọng số (và sampler cân bằng) không giúp: ở DeepWeeds mỗi loài vẫn có ~600 ảnh train,
   mất cân bằng chủ yếu là `Negatives` ↔ phần còn lại; tăng trọng số các loài làm F1 Snake weed giảm (0,915 so với
   0,927) dù Chinee apple tăng — giả thuyết: mô hình đoán loài nhiều hơn trên ảnh `Negatives` nên precision các loài
   giảm (chưa kiểm chứng riêng). Focal/LS cho kết quả tương đương CE.
 - **EMA:** macro-F1 val bằng trọng số EMA (0,9701) gần như bằng trọng số thường tốt nhất của cùng lần chạy (0,9705):
-  với lịch cosine về 0, trọng số cuối đã "mượt" sẵn nên EMA không thêm gì đáng kể (I06).
+  với lịch cosine về 0, trọng số cuối đã "mượt" sẵn nên EMA không thêm gì đáng kể ở cuối (I06). EMA hữu ích hơn ở giữa
+  quá trình: trong T10 trọng số thường dao động mạnh (macro-F1 val ~0,92 ở epoch 5–6) còn bản EMA ổn định quanh 0,96.
 - **Kết hợp (cách tham lam theo trục):** lấy giá trị tốt nhất của mỗi trục có Δ > 0 trên val: B = CutMix, C = focal,
-  F = EMA → T10. Kết quả: T10 = 0,9651, **thấp hơn** cả T00 (−0,0025) và từng yếu tố riêng lẻ: các hiệu ứng nhỏ **không cộng dồn mà triệt tiêu**. Hai quan sát: (i) trọng số thường của T10 đạt 0,9683 ở epoch tốt nhất, cao hơn bản EMA 0,9651 — với CutMix + focal mô hình hội tụ chậm hơn nên EMA (d = 0,999, ~1000 bước) kéo về trọng số cũ còn kém; (ii) CutMix (nhãn mềm) và focal (giảm trọng số mẫu dễ) cùng làm giảm độ tự tin, tác dụng chồng lên nhau thay vì bổ sung. Cả hai là giả thuyết, chưa tách riêng được với 1 seed. Vì vậy **cấu hình chung kết dùng công thức tốt nhất trên val là T04 (CutMix một mình)**, không dùng T10.
+  F = EMA → T10. Kết quả: T10 = 0,9651, **thấp hơn** cả T00 (−0,0025) và từng yếu tố riêng lẻ: các hiệu ứng nhỏ **không cộng dồn mà triệt tiêu**. Đường cong T10: EMA không phải nguyên nhân (bản EMA ổn định hơn trọng số thường suốt quá trình; ở epoch tốt nhất hai
+  bản ngang nhau: 0,9651 EMA và 0,9683 trọng số thường). Giả thuyết: CutMix (nhãn mềm) và focal (giảm trọng số mẫu dễ)
+  cùng làm giảm tín hiệu từ các mẫu đã đúng, tác dụng chồng lên nhau thay vì bổ sung; với 1 seed và Δ = −0,0025 (≈ 1,7
+  lần độ lệch của hiệu) cũng không loại trừ được nhiễu. Vì vậy **cấu hình chung kết dùng công thức tốt nhất trên val là T04 (CutMix một mình)**, không dùng T10.
 - Thứ tự tham lam và việc chỉ dùng 1 seed cho ablation là hạn chế đã nêu; kết luận chắc chắn chỉ rút ra ở Bước 4 (3 seed).
+
+![Ablation công thức huấn luyện](figures/training_ablation.png)
+
+**Nhận xét đường cong training** (`curves/`, `run_logs/*/seed*/history.csv`):
+
+- **Không có quá khớp muộn** ở ConvNeXt-T và DeiT-S: val loss giảm đến epoch 9–10 rồi phẳng, không tăng lại; epoch tốt
+  nhất hầu hết là 9–10, tức lịch warmup + cosine về 0 kết thúc đúng lúc mô hình hội tụ. ConvNeXt-T hội tụ rất nhanh
+  (macro-F1 val 0,857 ngay sau epoch 1 khi LR còn đang warmup).
+- **CutMix (T04, F01, T10)**: train loss **cao hơn** val loss suốt quá trình (T04: 0,50 so với 0,09 ở epoch 10) — bình
+  thường vì loss train tính trên nhãn trộn; macro-F1 val dao động mạnh ở các epoch đầu (0,86 ở epoch 3, 0,92 ở epoch 5
+  của F01 seed 0) và chỉ ổn định khi LR giảm.
+- **Từ đầu (T01)**: train loss giảm chậm (1,70 → 1,25), val loss nhiễu; top-1 val ~0,55 ≈ tỉ lệ `Negatives` (52%) nên
+  mô hình gần như chỉ học được lớp đa số và vài lớp dễ (macro-F1 0,30). **Đóng băng (T02)**: train ≈ val loss ≈ 0,38,
+  phẳng từ epoch 6 — thiếu dung lượng.
+- **Mạng BN**: EfficientNet-B0 là lần chạy duy nhất có val loss tăng nhẹ sau cực tiểu (epoch 7); xem mục 3.
 
 ## 5. Suy luận (Bước 3, mô hình T00 seed 0, chỉ trên val)
 
-Sheet `Inference` và `Latency`, `figures/inference_tradeoff.png`. Độ trễ: batch 1, FP32, warmup 10 lần, `torch.cuda.synchronize()`
+Sheet `Inference` và `Latency`, `figures/inference_tradeoff.png` (dưới). Độ trễ: batch 1, FP32, warmup 10 lần, `torch.cuda.synchronize()`
 trước và sau, 100 lần đo, Tesla T4, chỉ forward (không tính tiền xử lý, ảnh đã nằm trên GPU), channels_last.
 Loader trả ảnh gốc 256 đã chuẩn hoá; các view được tạo trên GPU.
 
@@ -198,6 +232,8 @@ Loader trả ảnh gốc 256 đã chuẩn hoá; các view được tạo trên G
   do chi phí ép kiểu từng lớp — đúng cảnh báo slide trang 73; ở batch 32 AMP nhanh gấp 2,7 lần. Gộp BN chính xác
   (sai số logit lớn nhất 7·10⁻⁵ với ResNet-50, 4·10⁻⁵ với EfficientNet-B0; F1 không đổi: 0,7838 trước và sau); ở batch 32 nhanh hơn ~2% (248 so với 253 ms), ở batch 1 khác biệt nằm trong
   dao động đo. ConvNeXt-T dùng LayerNorm nên không có BN để gộp.
+![Đánh đổi độ chính xác – độ trễ](figures/inference_tradeoff.png)
+
 - **Ngoại tuyến vs thời gian thực:** mọi phương pháp 1 model đều nằm xa dưới ngân sách 30–100 ms/khung trên T4. Phương
   pháp chọn cho chung kết (theo luật định trước: macro-F1 val cao nhất trong I00/I01/I02/I04, hoà thì ít forward hơn):
   **I04 ảnh đủ 288**, p95 = 17,7 ms — dùng được cả cho robot. TTA 10 crop hay ensemble chỉ hợp ngoại tuyến và ở đây
@@ -231,10 +267,18 @@ chạy test của cấu hình kết hợp đã loại được nêu rõ ở mụ
 | recall Snake weed | 94,6% ± 0,5 | 95,1% ± 1,0 | −0,5 điểm |
 | độ trễ batch 1 FP32, T4 (p50 / p95) | 16,8 / 17,7 ms | 11,8 / 12,5 ms | 1,4× |
 
-(mean ± std mẫu ddof = 1 qua 3 seed; F01 từng seed: macro-F1 test 0,9764 / 0,9720 / 0,9765.)
+(mean ± std mẫu ddof = 1 qua 3 seed; F01 từng seed: macro-F1 test 0,9764 / 0,9720 / 0,9765. Độ trễ đo ở mục 5 trên
+checkpoint T00 cùng kiến trúc ConvNeXt-T, cùng độ phân giải 288 / 224 — trọng số không ảnh hưởng độ trễ.)
 
 **Δ macro-F1 test = +0,0044, lớn hơn std lớn hơn trong hai nhóm (0,0026) 1,7 lần** nhưng chưa đến 2 lần và dưới 0,01:
-cải thiện là thật nhưng **nhỏ**. `eval.py grade` (đề xuất): I1 = 7/7, I2 = 4/5, I3 = 4/4, I4 = 2/2, I5 = 2/2 →
+cải thiện là thật nhưng **nhỏ**.
+
+**Cải thiện đến từ đâu? (phân tích sau, chỉ trên val)** Ở 224 1-view, F01 (CutMix) và T00 ngang nhau trên val (0,9680
+so với 0,9684, mục 4); phần tăng val của F01 (0,9719) đến từ suy luận ở 288. Hơn nữa, trên seed 0, mốc T00 suy luận ở
+288 (I04) đạt 0,9756 val, **cao hơn** F01 seed 0 ở 288 (0,9715): mô hình CutMix hưởng lợi từ độ phân giải cao ít hơn.
+Tức là hai lựa chọn "tốt nhất trên val" — chọn riêng rẽ, công thức trên 1-view và suy luận trên mô hình T00 — **không
+cộng dồn**, và cấu hình T00 + I04 288 có lẽ tốt hơn (mới có 1 seed để so). Đây là hạn chế của cách chọn tham lam từng
+bước; chúng tôi **không** đổi cấu hình hay chạy lại test sau khi đã xem kết quả test (GUIDE mục 5). `eval.py grade` (đề xuất): I1 = 7/7, I2 = 4/5, I3 = 4/4, I4 = 2/2, I5 = 2/2 →
 **19/20**. Chênh val/test của F01 là 0,0031 (< 0,02), không có dấu hiệu chọn quá khớp val.
 
 **So với bài báo** (trích dẫn, README 2.3): ResNet-50 95,7%, Inception-v3 95,1% (weighted average accuracy, 5 fold,
@@ -246,7 +290,9 @@ nghĩa accuracy và số fold khác nhau nên so sánh chỉ mang tính tham kh�
 Chinee apple 0,966; cao nhất Parkinsonia 0,986 và Negatives 0,984.
 
 **Ma trận nhầm lẫn và phân tích lỗi** (`figures/confusion_F01.png`, `figures/confusion_T00.png`, cộng 3 seed;
-`figures/errors_chinee_snake.png`):
+`figures/errors_chinee_snake.png`, `figures/errors_missed_weeds.png`):
+
+![Ma trận nhầm lẫn F01](figures/confusion_F01.png)
 
 | Nhầm lẫn (tổng 3 seed) | F01 | T00 |
 |---|---|---|
@@ -260,13 +306,19 @@ Chinee apple 0,966; cao nhất Parkinsonia 0,986 và Negatives 0,984.
   acacia, Rubber vine, Siam weed, Snake weed; ít hơn ở Lantana (17), Parthenium (10), Parkinsonia (1). So với mốc, F01 **dịch
   ngưỡng về phía `Negatives`**: báo nhầm giảm 3 lần (91 → 28) nhưng bỏ sót tăng 1,7 lần (87 → 148). Vì vậy
   macro-F1 và top-1 tăng (precision các loài tăng mạnh: ví dụ Lantana 0,959 → 0,997) trong khi balanced accuracy (trung
-  bình recall) giảm 0,005. Giả thuyết: CutMix dán vùng ảnh nền vào ảnh cỏ và ngược lại; khi mảnh cỏ nhỏ, nhãn trộn vẫn
-  ghi trọng số lớn cho loài cỏ, nhưng ảnh 288 toàn khung chứa nhiều nền hơn crop 224, làm mô hình thận trọng hơn với ảnh
-  mà cỏ chỉ chiếm phần nhỏ.
+  bình recall) giảm 0,005. Ảnh bị bỏ sót (`errors_missed_weeds.png`, 2 ảnh mỗi loài, F01 seed 0) chia hai nhóm:
+  khoảng một nửa **sát ngưỡng** (p(Negatives) 0,51–0,66 so với p(loài đúng) 0,34–0,48) — có thể lấy lại bằng một ngưỡng
+  `Negatives` chọn trên val; nửa còn lại bị bỏ sót **tự tin** (p(Negatives) 0,82–0,99) trên ảnh mà cây đích nhỏ hoặc lẫn
+  trong lá khô, đá, cỏ khô — vài ảnh nhìn bằng mắt khó thấy loài đích, có thể là nhiễu nhãn. Giả thuyết cho việc dịch
+  ngưỡng: ảnh đầy đủ 288 chứa nhiều nền hơn crop 224 và CutMix trộn nền vào ảnh cỏ, làm mô hình thận trọng hơn với ảnh
+  mà cỏ chỉ chiếm phần nhỏ (chưa tách được hai yếu tố).
+
+  ![Ảnh cỏ bị bỏ sót](figures/errors_missed_weeds.png)
 - **Chinee apple ↔ Snake weed** (cặp khó trong bài báo): giảm từ 23 xuống 14 ảnh (3 seed). Các ảnh còn nhầm của seed 0
   (`errors_chinee_snake.png`) đều là ảnh tối/bóng râm, lá nhỏ chỉ lộ một phần giữa thân cành khô hoặc cỏ khác; độ tin cậy
   thấp (p ≈ 0,55) trừ một ảnh Snake weed bị đoán Chinee với p = 0,96. Hai loài đều có lá xanh hình bầu dục cỡ nhỏ; ở
   256×256 khi lá chỉ chiếm vài chục pixel, thông tin hình dạng mép lá/gân lá — đặc trưng phân biệt chính — bị mất.
+  ![Nhầm Chinee apple ↔ Snake weed](figures/errors_chinee_snake.png)
 - Parkinsonia ↔ Prickly acacia (bài báo nêu 1,3%): còn 6 + 0 ảnh, đều là cây họ đậu lá kép nhỏ.
 
 ## 7. Kết luận và khuyến nghị
@@ -274,15 +326,19 @@ Chinee apple 0,966; cao nhất Parkinsonia 0,986 và Negatives 0,984.
 **Cấu hình nào tốt nhất?** ConvNeXt-T tinh chỉnh toàn bộ + CutMix, suy luận 1 lượt ở độ phân giải 288 trên ảnh đầy đủ,
 temperature scaling: macro-F1 test **0,9750 ± 0,0026**, top-1 **97,92% ± 0,20%**, ECE 0,007, p95 17,7 ms/ảnh trên T4.
 Hơn mốc T00 + I00 **+0,0044 macro-F1** (1,7 lần std): vượt nhiễu nhưng không nhiều, và đổi lại bỏ sót cỏ nhiều hơn.
+Phần cải thiện đến từ suy luận ở 288, không từ CutMix (mục 4 và 6); nhìn lại trên val, T00 + suy luận 288 có lẽ là lựa
+chọn tốt hơn — điều chỉ thấy được khi đo các yếu tố cùng nhau và nhiều seed.
 
 **Yếu tố nào đóng góp nhiều nhất?** Theo thứ tự (đều đo trên val, cùng công thức trừ yếu tố đang xét):
 
 1. **Khởi tạo tiền huấn luyện**: từ đầu 0,30 → tinh chỉnh 0,97 (+0,67). Đóng băng chỉ đạt 0,84.
-2. **Backbone (gắn với tag trọng số)**: ConvNeXt-T 0,968 so với ResNet-50 0,785, EfficientNet-B0 0,724 (+0,18 đến
-   +0,24); phần lớn khoảng cách của mạng BN là do lệch thống kê BN với công thức nền này (mục 3), không thuần do kiến trúc.
+2. **Backbone (gắn với tag trọng số)**: ConvNeXt-T 0,968 so với ResNet-50 0,785, EfficientNet-B0 0,724, MobileNetV3
+   0,600 (+0,18 đến +0,37); với hai mạng nhẹ, phần lớn khoảng cách là do lệch thống kê BN với công thức nền này, với
+   ResNet-50 là do chưa khớp (mục 3) — không thuần do kiến trúc.
 3. **Suy luận — độ phân giải kiểm tra**: +0,008 (I04, 288) với chi phí 1,4×; TTA/ensemble không giúp.
-4. **Công thức huấn luyện (augmentation, loss, EMA, sampler)**: mọi thay đổi trong ±0,004, cỡ nhiễu seed; kết hợp các
-   yếu tố "tốt" còn làm giảm. Với backbone tiền huấn luyện mạnh và 10 epoch, công thức nền đã gần bão hoà.
+4. **Công thức huấn luyện (augmentation, loss, EMA, sampler)**: mọi thay đổi trong ±0,004, cỡ nhiễu seed; yếu tố "tốt
+   nhất" (CutMix) không lặp lại được với 3 seed và kết hợp các yếu tố "tốt" còn làm giảm. Với backbone tiền huấn luyện
+   mạnh và 10 epoch, công thức nền đã gần bão hoà.
 
 Như vậy ở bài toán này **backbone + khởi tạo** quyết định gần như toàn bộ chất lượng; suy luận ở đúng độ phân giải là
 cải thiện rẻ nhất tiếp theo; tinh chỉnh công thức chỉ cho lợi ích biên.
@@ -296,7 +352,11 @@ này trừ khi ước lượng lại thống kê BN (mục 3) hoặc đổi augm
 ## 8. Hạn chế và việc tiếp theo
 
 - **Số seed:** sàng backbone và ablation chỉ 1 seed (nhiễu ước lượng từ 3 seed của T00: std 0,0011 trên val); chỉ chung
-  kết và mốc có 3 seed. Các kết luận về CutMix/EMA/focal ở mục 4 vì vậy chỉ là xu hướng.
+  kết và mốc có 3 seed. Hậu quả đã thấy rõ: CutMix được chọn nhờ +0,0027 ở 1 seed nhưng không có tác dụng với 3 seed
+  (mục 4); các kết luận về EMA/focal/TrivialAugment vì vậy cũng chỉ là xu hướng.
+- **Chọn tham lam từng bước, không đo tương tác:** công thức chọn trên 1-view, phương pháp suy luận chọn trên mô hình T00;
+  hai lựa chọn không cộng dồn (mục 6). Đúng ra nên chọn phương pháp suy luận trên chính mô hình của công thức cuối, hoặc
+  so cả T00 + I04 với T04 + I04 trên val trước khi chốt.
 - **Một fold**, chia ngẫu nhiên theo ảnh, **không theo địa điểm**: ảnh cùng địa điểm/cùng ngày có thể nằm ở cả train và
   test, nên điểm test có thể **lạc quan** so với khi robot gặp cánh đồng, mùa, ánh sáng mới. Temperature T khớp trên
   val cùng phân phối cũng có thể không còn đúng khi lệch miền.
@@ -328,8 +388,9 @@ này trừ khi ước lượng lại thống kê BN (mục 3) hoặc đổi augm
 ## 9. Phụ lục
 
 - Danh sách `exp_id` và cấu hình đầy đủ: sheet `Backbones`, `Training`, `Inference`, `Final` của `results.xlsx`;
-  cấu hình từng lần chạy (gồm tag trọng số, phiên bản thư viện): `runs/<exp_id>/seed<k>/config.json` và `summary.json`
-  (trên Google Drive, không commit vì có checkpoint).
+  cấu hình từng lần chạy (gồm tag trọng số, phiên bản thư viện): `run_logs/<exp_id>/seed<k>/config.json`, log theo
+  epoch `history.csv`, tóm tắt `summary.json`; log stdout của từng stage: `run_logs/stdout/*.log` (dòng `[exp_id sK] ep …`).
+  Checkpoint và logit (`runs/` trên Google Drive) không commit.
 - Ảnh đường cong: `curves/<exp_id>_<mô tả>.png` (T00 và F01 có một ảnh mỗi seed: `_seed0/1/2`).
 - Notebook: `code/lab_day2.ipynb` (sạch, chạy lại được) và `code/lab_day2_run.ipynb` (bản đã chạy trên Colab).
 - Kết quả `eval.py`: `eval_out/score_F01.txt`, `score_T00.txt`, `score_F01uncal.txt`, `grade.txt`.

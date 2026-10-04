@@ -1,0 +1,94 @@
+Số ảnh: {'train': 10501, 'val': 3501, 'test': 3507} | tỉ lệ: {'train': 0.5997, 'val': 0.2, 'test': 0.2003} | hợp: 17509 | giao: {'train∩val': 0, 'train∩test': 0, 'val∩test': 0} | thiếu file: 0
+                train   val  test  total
+Chinee Apple      675   225   226   1126
+Lantana           637   213   213   1063
+Parkinsonia       618   206   207   1031
+Parthenium        613   204   205   1022
+Prickly Acacia    637   212   213   1062
+Rubber Vine       605   202   202   1009
+Siam Weed         644   215   215   1074
+Snake Weed        609   203   204   1016
+Negatives        5463  1821  1822   9106
+/content/drive/MyDrive/VinAI/K4-Track4-Day2-Deeplearning-Advance/submissions/MSSV_ho_ten/code/train.py:202: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  scheduler.step()
+[T00 s1] ep  1 train_loss 0.8136 val_loss 0.3041 val_F1 0.8565 val_top1 0.9009 (59s)
+[T00 s1] ep  2 train_loss 0.3303 val_loss 0.1973 val_F1 0.9186 val_top1 0.9372 (47s)
+[T00 s1] ep  3 train_loss 0.2090 val_loss 0.1417 val_F1 0.9419 val_top1 0.9554 (47s)
+[T00 s1] ep  4 train_loss 0.1734 val_loss 0.1950 val_F1 0.9175 val_top1 0.9334 (47s)
+[T00 s1] ep  5 train_loss 0.1372 val_loss 0.1512 val_F1 0.9399 val_top1 0.9563 (46s)
+[T00 s1] ep  6 train_loss 0.1044 val_loss 0.1092 val_F1 0.9610 val_top1 0.9697 (46s)
+[T00 s1] ep  7 train_loss 0.0780 val_loss 0.1202 val_F1 0.9597 val_top1 0.9686 (46s)
+[T00 s1] ep  8 train_loss 0.0595 val_loss 0.1008 val_F1 0.9688 val_top1 0.9757 (46s)
+[T00 s1] ep  9 train_loss 0.0485 val_loss 0.0935 val_F1 0.9697 val_top1 0.9771 (46s)
+[T00 s1] ep 10 train_loss 0.0351 val_loss 0.0977 val_F1 0.9673 val_top1 0.9749 (46s)
+Số ảnh: {'train': 10501, 'val': 3501, 'test': 3507} | tỉ lệ: {'train': 0.5997, 'val': 0.2, 'test': 0.2003} | hợp: 17509 | giao: {'train∩val': 0, 'train∩test': 0, 'val∩test': 0} | thiếu file: 0
+                train   val  test  total
+Chinee Apple      675   225   226   1126
+Lantana           637   213   213   1063
+Parkinsonia       618   206   207   1031
+Parthenium        613   204   205   1022
+Prickly Acacia    637   212   213   1062
+Rubber Vine       605   202   202   1009
+Siam Weed         644   215   215   1074
+Snake Weed        609   203   204   1016
+Negatives        5463  1821  1822   9106
+/content/drive/MyDrive/VinAI/K4-Track4-Day2-Deeplearning-Advance/submissions/MSSV_ho_ten/code/train.py:202: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  scheduler.step()
+[F01 s1] ep  1 train_loss 1.2534 val_loss 0.3951 val_F1 0.8198 val_top1 0.8675 (47s)
+[F01 s1] ep  2 train_loss 0.8262 val_loss 0.3516 val_F1 0.8637 val_top1 0.8789 (47s)
+[F01 s1] ep  3 train_loss 0.7098 val_loss 0.2201 val_F1 0.9154 val_top1 0.9332 (47s)
+[F01 s1] ep  4 train_loss 0.6612 val_loss 0.2013 val_F1 0.9216 val_top1 0.9392 (47s)
+[F01 s1] ep  5 train_loss 0.5994 val_loss 0.1676 val_F1 0.9299 val_top1 0.9460 (47s)
+[F01 s1] ep  6 train_loss 0.5704 val_loss 0.1179 val_F1 0.9561 val_top1 0.9643 (47s)
+[F01 s1] ep  7 train_loss 0.5156 val_loss 0.1019 val_F1 0.9641 val_top1 0.9717 (47s)
+[F01 s1] ep  8 train_loss 0.5200 val_loss 0.1024 val_F1 0.9613 val_top1 0.9700 (47s)
+[F01 s1] ep  9 train_loss 0.5111 val_loss 0.0941 val_F1 0.9652 val_top1 0.9726 (47s)
+[F01 s1] ep 10 train_loss 0.4804 val_loss 0.0951 val_F1 0.9651 val_top1 0.9732 (47s)
+Số ảnh: {'train': 10501, 'val': 3501, 'test': 3507} | tỉ lệ: {'train': 0.5997, 'val': 0.2, 'test': 0.2003} | hợp: 17509 | giao: {'train∩val': 0, 'train∩test': 0, 'val∩test': 0} | thiếu file: 0
+                train   val  test  total
+Chinee Apple      675   225   226   1126
+Lantana           637   213   213   1063
+Parkinsonia       618   206   207   1031
+Parthenium        613   204   205   1022
+Prickly Acacia    637   212   213   1062
+Rubber Vine       605   202   202   1009
+Siam Weed         644   215   215   1074
+Snake Weed        609   203   204   1016
+Negatives        5463  1821  1822   9106
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+/content/drive/MyDrive/VinAI/K4-Track4-Day2-Deeplearning-Advance/submissions/MSSV_ho_ten/code/train.py:202: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  scheduler.step()
+[T00 s2] ep  1 train_loss 0.8083 val_loss 0.3587 val_F1 0.8375 val_top1 0.8797 (47s)
+[T00 s2] ep  2 train_loss 0.3256 val_loss 0.2411 val_F1 0.9012 val_top1 0.9215 (47s)
+[T00 s2] ep  3 train_loss 0.2263 val_loss 0.2211 val_F1 0.9051 val_top1 0.9329 (47s)
+[T00 s2] ep  4 train_loss 0.1755 val_loss 0.1374 val_F1 0.9468 val_top1 0.9597 (47s)
+[T00 s2] ep  5 train_loss 0.1377 val_loss 0.1298 val_F1 0.9482 val_top1 0.9583 (46s)
+[T00 s2] ep  6 train_loss 0.0938 val_loss 0.0997 val_F1 0.9632 val_top1 0.9717 (46s)
+[T00 s2] ep  7 train_loss 0.0688 val_loss 0.1010 val_F1 0.9582 val_top1 0.9692 (46s)
+[T00 s2] ep  8 train_loss 0.0616 val_loss 0.0988 val_F1 0.9650 val_top1 0.9726 (46s)
+[T00 s2] ep  9 train_loss 0.0456 val_loss 0.0936 val_F1 0.9653 val_top1 0.9734 (46s)
+[T00 s2] ep 10 train_loss 0.0396 val_loss 0.0894 val_F1 0.9680 val_top1 0.9754 (46s)
+Số ảnh: {'train': 10501, 'val': 3501, 'test': 3507} | tỉ lệ: {'train': 0.5997, 'val': 0.2, 'test': 0.2003} | hợp: 17509 | giao: {'train∩val': 0, 'train∩test': 0, 'val∩test': 0} | thiếu file: 0
+                train   val  test  total
+Chinee Apple      675   225   226   1126
+Lantana           637   213   213   1063
+Parkinsonia       618   206   207   1031
+Parthenium        613   204   205   1022
+Prickly Acacia    637   212   213   1062
+Rubber Vine       605   202   202   1009
+Siam Weed         644   215   215   1074
+Snake Weed        609   203   204   1016
+Negatives        5463  1821  1822   9106
+/content/drive/MyDrive/VinAI/K4-Track4-Day2-Deeplearning-Advance/submissions/MSSV_ho_ten/code/train.py:202: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  scheduler.step()
+[F01 s2] ep  1 train_loss 1.2558 val_loss 0.4367 val_F1 0.8258 val_top1 0.8615 (47s)
+[F01 s2] ep  2 train_loss 0.8110 val_loss 0.3132 val_F1 0.8729 val_top1 0.8989 (47s)
+[F01 s2] ep  3 train_loss 0.6865 val_loss 0.2598 val_F1 0.8989 val_top1 0.9243 (47s)
+[F01 s2] ep  4 train_loss 0.6490 val_loss 0.1487 val_F1 0.9443 val_top1 0.9569 (47s)
+[F01 s2] ep  5 train_loss 0.6182 val_loss 0.1379 val_F1 0.9468 val_top1 0.9597 (47s)
+[F01 s2] ep  6 train_loss 0.5471 val_loss 0.1217 val_F1 0.9552 val_top1 0.9652 (47s)
+[F01 s2] ep  7 train_loss 0.5431 val_loss 0.1042 val_F1 0.9628 val_top1 0.9706 (47s)
+[F01 s2] ep  8 train_loss 0.5027 val_loss 0.0941 val_F1 0.9641 val_top1 0.9723 (47s)
+[F01 s2] ep  9 train_loss 0.5020 val_loss 0.0935 val_F1 0.9672 val_top1 0.9737 (47s)
+[F01 s2] ep 10 train_loss 0.4985 val_loss 0.0949 val_F1 0.9683 val_top1 0.9743 (47s)
+stage final xong sau 38.2 phút

@@ -12,15 +12,26 @@ Bài nộp của **Văn Quốc Dũng — MSSV 2A202602505** (thư mục `2A20260
 | Dự đoán test/val (định dạng `eval.py`) | [`predictions/`](predictions) |
 | Hình cho báo cáo (EDA, kiểm tra pipeline, đánh đổi, ma trận nhầm lẫn, ảnh lỗi) | [`figures/`](figures) |
 | Bảng trung gian (kiểm tra chia, suy luận, độ trễ, hiệu chuẩn) | [`tables/`](tables) |
+| Log từng lần chạy: cấu hình, log theo epoch, tóm tắt; log stdout từng stage | [`run_logs/`](run_logs) |
 | Kết quả `eval.py score/grade` | [`eval_out/`](eval_out) |
 | Kết quả test của cấu hình kết hợp đã loại (không mở, xem report mục 8) | `discarded_F01_combo/` (trên Drive) |
 | Code | [`code/`](code) |
 
 ## Chạy lại
 
-**Notebook:** [`code/lab_day2.ipynb`](code/lab_day2.ipynb), mở bằng Google Colab (Runtime → GPU T4).
-Notebook giả định repo nằm ở `MyDrive/VinAI/K4-Track4-Day2-Deeplearning-Advance` trên Google Drive
-(sửa biến `REPO` ở ô đầu nếu khác). Bản notebook đã chạy (có output) nằm cạnh nó: `code/lab_day2_run.ipynb`.
+**Notebook (Colab, GPU T4):**
+
+- Notebook sạch, chạy lại toàn bộ: [`code/lab_day2.ipynb`](code/lab_day2.ipynb) —
+  [mở trên Colab](https://colab.research.google.com/github/vvstdung89/K4-Track4-Day2-Deeplearning-Advance/blob/lab-submission/submissions/2A202602505_van_quoc_dung/code/lab_day2.ipynb)
+  (link hoạt động khi nhánh `lab-submission` đã được push lên GitHub).
+- Notebook đã chạy, có output: [`code/lab_day2_run.ipynb`](code/lab_day2_run.ipynb) —
+  [bản trên Google Drive](https://colab.research.google.com/drive/1NzaI5zi9vjw5uBQgg0OKCiZlOo1cQDgS)
+  (cần quyền xem do chủ Drive chia sẻ).
+
+Notebook giả định repo nằm ở `MyDrive/VinAI/K4-Track4-Day2-Deeplearning-Advance` trên Google Drive (sửa biến `REPO` ở
+ô đầu nếu khác). Chạy lại trên thư mục đã có kết quả là an toàn: lần chạy đã có `summary.json` được bỏ qua, các stage
+`eda`/`sanity`/`bnrecal`/`inference` bỏ qua nếu bảng kết quả đã có (thêm `--force` để tính lại), test của mỗi seed chỉ
+được đánh giá một lần.
 
 Thứ tự chạy (mỗi lệnh là một stage của `code/run_experiments.py`; các lần chạy đã có `summary.json` được bỏ qua,
 nên có thể chạy tiếp sau khi Colab bị ngắt):

@@ -640,9 +640,18 @@ def main():
     ap.add_argument("--only", default="")
     ap.add_argument("--combo", default="")
     ap.add_argument("--seeds", default="0,1,2")
+    ap.add_argument("--force", action="store_true",
+                    help="tính lại eda/sanity/bnrecal/inference dù kết quả đã có (mặc định: bỏ qua để không ghi đè số đã báo cáo)")
     a = ap.parse_args()
     only = [s for s in a.only.split(",") if s] or None
     t0 = time.time()
+    done = {"eda": TABLES / "split_check.json", "sanity": TABLES / "sanity_checks.json",
+            "bnrecal": TABLES / "bn_recalibration.csv", "inference": TABLES / "inference_choice.json"}
+    if a.stage in done and done[a.stage].exists() and not a.force:
+        print(f"stage {a.stage}: đã có {done[a.stage].name}, bỏ qua (dùng --force để tính lại)")
+        if a.stage == "eda":
+            D.get_cache(DATA / "images", DATA / "cache.npy")  # các stage sau vẫn cần cache ảnh
+        return
     if a.stage == "eda":
         stage_eda()
     elif a.stage == "sanity":

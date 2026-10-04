@@ -96,7 +96,7 @@ def main():
                      "val_f1_chinee": s["val_f1_per_class"][0], "val_f1_snake": s["val_f1_per_class"][7],
                      "val_ece": s["val_ece"], "best_epoch": s["best_epoch"],
                      "train_time_per_epoch_s": s["train_time_per_epoch_s"],
-                     "curve": f"curves/{eid}_{s['desc']}.png",
+                     "curve": curve_path(eid, s["desc"], 0),
                      "note": (f"= {s['alias_of']} (cùng cấu hình). " if s.get("alias_of") else "")
                              + (f"F1 trọng số thường (không EMA) tốt nhất {s['val_macro_f1_raw_best']:.4f}. "
                                 if s.get("val_macro_f1_raw_best") else "")})
@@ -126,7 +126,7 @@ def main():
                           "test_ece_uncalibrated": unc.get(r["seed"], {}).get("ece", np.nan),
                           "test_recall_chinee": r["recall"][0], "test_recall_snake": r["recall"][7],
                           "test_f1_chinee": r["f1"][0], "test_f1_snake": r["f1"][7],
-                          "pred_file": r["file"]})
+                          "pred_file": r["file"], "curve": curve_path(gid, "final" if gid == "F01" else "baseline", r["seed"])})
         if test:
             st = {}
             for k in ("macro_f1", "top1", "balanced_acc", "ece"):
@@ -258,6 +258,7 @@ def main():
         ax.set_title(f"Ma trận nhầm lẫn test, {gid}, cộng {len(test)} seed")
         fig.tight_layout(); fig.savefig(FIGS / f"confusion_{gid}.png", dpi=110); plt.close(fig)
     misclassified_grid()
+    missed_weeds_grid()
     json.dump({k: {m: list(v) for m, v in st.items()} for k, st in final_stats.items()},
               open(TABLES / "final_stats.json", "w", encoding="utf-8"), indent=2)
 
@@ -283,6 +284,33 @@ def combo_desc() -> str:
 def infer_desc() -> str:
     f = TABLES / "inference_choice.json"
     return json.loads(f.read_text(encoding="utf-8"))["method"] if f.exists() else "suy luận đã chọn"
+
+
+def curve_path(eid: str, desc: str, seed: int) -> str:
+    """curves/<exp_id>_<mô tả>.png; T00 và F01 (nhiều seed) có một ảnh mỗi seed: ..._seed<k>.png."""
+    multi = SUB / "curves" / f"{eid}_{desc}_seed{seed}.png"
+    return f"curves/{multi.name}" if multi.exists() else f"curves/{eid}_{desc}.png"
+
+
+def missed_weeds_grid():
+    """Lỗi phổ biến nhất của F01: ảnh có cỏ bị đoán Negatives (bỏ sót). Mỗi loài 2 ảnh, F01 seed0 trên test."""
+    import matplotlib.pyplot as plt
+    from PIL import Image
+    f = SUB / "predictions" / "F01_seed0_test.csv"
+    if not f.exists() or not (DATA / "images").exists():
+        return
+    p = read_pred(str(f))
+    fig, axes = plt.subplots(2, 8, figsize=(18, 5.4))
+    for c in range(8):
+        idx = np.where((p.y_true == c) & (p.y_pred == 8))[0][:2]
+        for r in range(2):
+            ax = axes[r, c]; ax.axis("off")
+            if r < len(idx):
+                i = idx[r]
+                ax.imshow(Image.open(DATA / "images" / p.filenames[i]))
+                ax.set_title(f"{D.CLASS_NAMES[c]}\np(Neg)={p.probs[i, 8]:.2f} p(thật)={p.probs[i, c]:.2f}", fontsize=7)
+    fig.suptitle("F01 seed0 trên test: ảnh có cỏ bị đoán Negatives (bỏ sót), 2 ảnh mỗi loài")
+    fig.tight_layout(); fig.savefig(FIGS / "errors_missed_weeds.png", dpi=90); plt.close(fig)
 
 
 def misclassified_grid():
