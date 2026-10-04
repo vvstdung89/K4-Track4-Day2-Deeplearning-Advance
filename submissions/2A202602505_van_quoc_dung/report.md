@@ -392,5 +392,6 @@ này trừ khi ước lượng lại thống kê BN (mục 3) hoặc đổi augm
   epoch `history.csv`, tóm tắt `summary.json`; log stdout của từng stage: `run_logs/stdout/*.log` (dòng `[exp_id sK] ep …`).
   Checkpoint và logit (`runs/` trên Google Drive) không commit.
 - Ảnh đường cong: `curves/<exp_id>_<mô tả>.png` (T00 và F01 có một ảnh mỗi seed: `_seed0/1/2`).
-- Notebook: `code/lab_day2.ipynb` (sạch, chạy lại được) và `code/lab_day2_run.ipynb` (bản đã chạy trên Colab).
+- Notebook: `code/lab_day2.ipynb` (notebook chính, chạy lại được, có output) và `code/lab_day2_execution_log.ipynb`
+  (nhật ký thực thi gốc trên Colab).
 - Kết quả `eval.py`: `eval_out/score_F01.txt`, `score_T00.txt`, `score_F01uncal.txt`, `grade.txt`.

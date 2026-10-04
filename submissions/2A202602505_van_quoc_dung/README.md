@@ -2,7 +2,7 @@
 
 Bài nộp của **Văn Quốc Dũng — MSSV 2A202602505** (thư mục `2A202602505_van_quoc_dung`).
 
-*Ghi chú:* các thí nghiệm được chạy khi thư mục còn tên tạm `MSSV_ho_ten`, nên các log đã chạy (`code/lab_day2_run.ipynb`, `eval_out/score_*.txt`) còn đường dẫn cũ; nội dung không đổi.
+*Ghi chú:* các thí nghiệm được chạy khi thư mục còn tên tạm `MSSV_ho_ten`, nên các log đã chạy (`code/lab_day2_execution_log.ipynb`, `eval_out/score_*.txt`) còn đường dẫn cũ; nội dung không đổi.
 
 | Sản phẩm | Vị trí |
 |---|---|
@@ -21,10 +21,12 @@ Bài nộp của **Văn Quốc Dũng — MSSV 2A202602505** (thư mục `2A20260
 
 **Notebook (Colab, GPU T4):**
 
-- Notebook sạch, chạy lại toàn bộ: [`code/lab_day2.ipynb`](code/lab_day2.ipynb) —
+- **Notebook chính** (bộ khung `lab_day2.ipynb` đã hoàn thiện, chạy lại toàn bộ, đã chạy và có output):
+  [`code/lab_day2.ipynb`](code/lab_day2.ipynb) —
   [mở trên Colab](https://colab.research.google.com/github/vvstdung89/K4-Track4-Day2-Deeplearning-Advance/blob/lab-submission/submissions/2A202602505_van_quoc_dung/code/lab_day2.ipynb)
   (link hoạt động khi nhánh `lab-submission` đã được push lên GitHub).
-- Notebook đã chạy, có output: [`code/lab_day2_run.ipynb`](code/lab_day2_run.ipynb) —
+- Nhật ký thực thi gốc (notebook làm việc trên Colab trong lúc chạy các thí nghiệm, gồm cả các ô gỡ lỗi; chỉ để
+  đối chiếu, không cần chạy lại): [`code/lab_day2_execution_log.ipynb`](code/lab_day2_execution_log.ipynb) —
   [bản trên Google Drive](https://colab.research.google.com/drive/1NzaI5zi9vjw5uBQgg0OKCiZlOo1cQDgS)
   (cần quyền xem do chủ Drive chia sẻ).
 
